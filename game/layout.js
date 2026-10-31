@@ -17,11 +17,11 @@ export function playLayout(w, h, reserved = null, opts = {}) {
   const menuRight = menu ? menu.x + menu.w : 130;
   const topPad = Math.round(menuBottom + 8);
   const pad = clamp(Math.round(Math.min(w, h) * 0.03), 8, 20);
-  const actionsH = opts.actions === false ? 0 : 60;
+  const actionsH = opts.actions === false ? 0 : h < 460 ? 52 : 60;
   const statusH = opts.status === false ? 0 : 34;
 
   if (landscape) {
-    const colW = clamp(Math.round(w * 0.27), 200, 300);
+    const colW = clamp(Math.round(w * 0.3), 210, 300);
     const colX = pad;
     const colY = topPad;
     const colH = h - colY - pad;

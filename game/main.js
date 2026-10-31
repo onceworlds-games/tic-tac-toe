@@ -221,6 +221,7 @@ async function boot(preview = '') {
       const v = currentView();
       L = playLayout(w, h, reserved, { actions: true, status: true });
       place(scoreEl, L.score);
+      scoreEl.classList.toggle('tight', L.score.mode === 'col' && L.score.h < 340);
       place(statusEl, L.status);
       place(actionsEl, L.actions);
       // the platform's lobby strip keeps the bottom clear in the lobby only; in play nothing but the menu is in our way
@@ -567,8 +568,12 @@ async function boot(preview = '') {
     bannerEl.style.width = '';
     bannerEl.style.height = '';
     if (L) {
+      // portrait: in the free space above the board; landscape: across the board
+      const above = !L.landscape && L.status.y > L.board.y - 120;
       bannerEl.style.left = `${Math.round(L.board.x + L.board.s / 2)}px`;
-      bannerEl.style.top = `${Math.round(L.board.y + L.board.s / 2)}px`;
+      bannerEl.style.top = `${Math.round(L.landscape ? L.board.y + L.board.s / 2 : Math.max(L.score.y + L.score.h + 44, L.board.y - 46))}px`;
+      bannerEl.style.fontSize = `${Math.round(Math.min(L.board.s * 0.115, 56))}px`;
+      void above;
     }
   }
 
@@ -1019,7 +1024,7 @@ async function boot(preview = '') {
     if (mark && text) statusEl.appendChild(glyph(mark));
     const span = el('span', null, text);
     statusEl.appendChild(span);
-    if (v.thinking) {
+    if (false) {
       const dots = el('span', 'dots');
       dots.append(el('i'), el('i'), el('i'));
       statusEl.appendChild(dots);
@@ -1066,11 +1071,11 @@ async function boot(preview = '') {
     else if (name === 'ui-draw') go('computer', 5, [0, 1, 2, 4, 3, 5, 7, 6, 8]);
     else if (name === 'ui-results') {
       go('computer', 1, [0, 3, 1, 4, 2]);
-      local.restart = local.restart;
+      local.tick(3.5);
     } else if (name === 'ui-play-4') go('same', 3, [5, 6, 10, 9, 15, 0], { board: 4 });
     setTimeout(() => {
       document.body.dataset.ready = '1';
-    }, name === 'ui-results' ? 5200 : name === 'ui-win' || name === 'ui-draw' ? 2300 : 1800);
+    }, name === 'ui-results' ? 9000 : name === 'ui-win' || name === 'ui-draw' ? 2300 : 1800);
   }
   window.__ttt = { get screen() { return screen; }, get view() { return currentView(); }, room, online, startLocal, showScreen, prefs, setup: (id, v) => onPick(id, v) };
   void avatar;

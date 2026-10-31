@@ -91,6 +91,6 @@ export function statusText(v) {
   if (!v.turnP) return '';
   if (v.mode === 'same') return `${v.turnP.name}'s move`;
   if (v.mine) return 'Your move';
-  if (v.turnP.bot) return `${v.turnP.name} is thinking`;
+  if (v.turnP.bot) return `${v.turnP.name} thinking`;
   return `${v.turnP.name}'s move`;
 }

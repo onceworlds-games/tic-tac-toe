@@ -324,7 +324,7 @@ export class Renderer {
         sy = 1 - 0.2 * sq;
         sx = 1 + 0.12 * sq;
       }
-      if (losing && !inWin.has(c)) alpha *= 0.4;
+      if (losing && !inWin.has(c)) alpha *= 0.5;
       let glow = 0;
       if (inWin.has(c) && scene.lineAt != null) {
         const wk = t - scene.lineAt - 0.25;
@@ -538,7 +538,7 @@ export class Renderer {
     const k = easeOutCubic((t - scene.lineAt) / 0.5);
     if (k <= 0) return;
     const len = full * k;
-    const wt = cs * 0.25;
+    const wt = cs * 0.2;
     const pal = PAL[scene.winner] || PAL.x;
     ctx.save();
     ctx.translate(a.cx, a.cy);

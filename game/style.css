@@ -94,10 +94,10 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
 #score { position: absolute; display: grid; gap: 8px; align-items: stretch; }
 #score.row { grid-template-columns: 1fr auto 1fr; }
 #score.col { grid-template-rows: auto auto auto; align-content: start; }
-.card { position: relative; display: grid; grid-template-columns: auto 1fr; grid-template-areas: "av tile" "nm nm"; gap: 4px 12px; align-items: center; padding: 10px 12px 8px; border-radius: 12px; min-width: 0; transition: transform .2s, filter .2s; }
+.card { position: relative; display: grid; grid-template-columns: auto 1fr; grid-template-areas: "av tile" "nm nm"; gap: 4px 8px; align-items: center; padding: 10px 10px 8px; border-radius: 12px; min-width: 0; transition: transform .2s, filter .2s; }
 .card .av { grid-area: av; }
 .card .flap { grid-area: tile; justify-self: end; }
-.card .nm { grid-area: nm; font: 400 17px/1.1 var(--display); text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; letter-spacing: .01em; }
+.card .nm { grid-area: nm; font: 400 16px/1.1 var(--display); text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; letter-spacing: .01em; }
 .card.b .flap { order: 0; }
 #score.col .card { grid-template-columns: auto 1fr auto; grid-template-areas: "av nm tile"; padding: 10px 12px; }
 .card::before { content: ''; position: absolute; left: 14px; right: 14px; bottom: -3px; height: 5px; border-radius: 3px; background: transparent; transition: background .2s, box-shadow .2s; }
@@ -106,10 +106,10 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
 .card:not(.turn).dim { filter: brightness(.82); }
 .mid { display: grid; justify-items: center; align-content: center; gap: 4px; padding: 8px 10px; min-width: 72px; border-radius: 12px; }
 .mid .cap { font: 800 16px/1 var(--body); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-dim); }
-#score.col .mid { grid-template-columns: auto auto; justify-content: center; gap: 12px; padding: 6px 12px; }
+#score.col .mid { grid-template-columns: auto auto; justify-content: center; align-items: center; gap: 12px; padding: 6px 12px; }
 
-.flap { position: relative; width: 54px; height: 68px; perspective: 360px; font: 400 54px/68px var(--display); color: var(--ink); }
-.flap.sm { width: 44px; height: 56px; font-size: 44px; line-height: 56px; }
+.flap { position: relative; width: 50px; height: 64px; perspective: 360px; font: 400 50px/64px var(--display); color: var(--ink); }
+.flap.sm { width: 42px; height: 54px; font-size: 42px; line-height: 54px; }
 .flap.l3 { font-size: 40px; }
 .flap.sm.l3 { font-size: 32px; }
 .flap .h { position: absolute; left: 0; right: 0; height: 50%; overflow: hidden; background: linear-gradient(#2a2523, #171311); }
@@ -126,8 +126,9 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
 @keyframes flipB { to { transform: rotateX(0deg); } }
 
 /* ------------------------------------------------------------------ status line and actions */
-#status { position: absolute; display: flex; align-items: flex-end; justify-content: center; gap: 10px; font: 400 21px/1.05 var(--display); text-transform: uppercase; text-shadow: 0 2px 0 #000, 0 0 8px rgba(0,0,0,.7); letter-spacing: .02em; pointer-events: none; padding-bottom: 6px; }
+#status { white-space: nowrap; position: absolute; display: flex; align-items: flex-end; justify-content: center; gap: 10px; font: 400 21px/1.05 var(--display); text-transform: uppercase; text-shadow: 0 2px 0 #000, 0 0 8px rgba(0,0,0,.7); letter-spacing: .02em; pointer-events: none; padding-bottom: 6px; }
 #status .g { width: 24px; height: 24px; vertical-align: 0; filter: drop-shadow(0 2px 0 rgba(0,0,0,.6)); }
+#status .dots { display: inline-flex; align-items: flex-end; }
 #status .dots i { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--ink); margin-left: 4px; animation: dot 1s infinite; }
 #status .dots i:nth-child(2) { animation-delay: .15s; }
 #status .dots i:nth-child(3) { animation-delay: .3s; }
@@ -137,8 +138,8 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
 #actions .btn .n { display: inline-grid; place-items: center; min-width: 24px; height: 24px; border-radius: 12px; background: var(--brass); color: #2a1308; font-size: 16px; }
 
 /* ------------------------------------------------------------------ banner and results */
-#banner { position: absolute; left: 50%; top: 50%; z-index: 4; pointer-events: none; transform: translate(-50%, -50%) rotate(-2deg); max-width: 94vw; text-align: center; }
-#banner .tape { position: relative; padding: 14px 40px 16px; background: var(--ink); color: #2a1308; font: 400 clamp(30px, 6.5vw, 52px)/1 var(--display); text-transform: uppercase; letter-spacing: .02em; white-space: nowrap; clip-path: polygon(0 4%, 2% 0, 4% 6%, 6% 0, 94% 0, 96% 6%, 98% 0, 100% 4%, 100% 96%, 98% 100%, 96% 94%, 94% 100%, 6% 100%, 4% 94%, 2% 100%, 0 96%); filter: drop-shadow(0 8px 0 rgba(0,0,0,.45)); animation: slap .45s cubic-bezier(.2,1.5,.4,1) both; display: flex; align-items: center; justify-content: center; gap: 14px; }
+#banner { font-size: 40px; position: absolute; left: 50%; top: 50%; z-index: 4; pointer-events: none; transform: translate(-50%, -50%) rotate(-2deg); max-width: 94vw; text-align: center; }
+#banner .tape { position: relative; padding: .28em .8em .3em; background: var(--ink); color: #2a1308; font: 400 1em/1 var(--display); text-transform: uppercase; letter-spacing: .02em; white-space: nowrap; clip-path: polygon(0 4%, 2% 0, 4% 6%, 6% 0, 94% 0, 96% 6%, 98% 0, 100% 4%, 100% 96%, 98% 100%, 96% 94%, 94% 100%, 6% 100%, 4% 94%, 2% 100%, 0 96%); filter: drop-shadow(0 8px 0 rgba(0,0,0,.45)); animation: slap .45s cubic-bezier(.2,1.5,.4,1) both; display: flex; align-items: center; justify-content: center; gap: 14px; }
 #banner .tape::before, #banner .tape::after { content: ''; position: absolute; left: 0; right: 0; height: 6px; background: var(--edge, var(--coral)); }
 #banner .tape::before { top: 10px; }
 #banner .tape::after { bottom: 10px; }
@@ -173,4 +174,18 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) {
   .flap .fl { animation-duration: .01s; }
   #banner .tape, #result .panel { animation: none; }
+}
+
+.start-row { position: sticky; bottom: 0; padding-top: 8px; z-index: 3; background: linear-gradient(rgba(30,18,10,0), rgba(30,18,10,.92) 35%); }
+#score.tight .card { padding: 6px 10px; }
+#score.tight .av { width: 40px; height: 40px; }
+#score.tight .flap { width: 40px; height: 50px; font-size: 40px; line-height: 50px; }
+#score.tight .mid { padding: 4px 10px; }
+#score.tight .flap.sm { width: 34px; height: 42px; font-size: 34px; line-height: 42px; }
+#score.tight .mid .cap { font-size: 16px; }
+@media (max-height: 460px) {
+  .seg button { min-height: 50px; }
+  #actions .btn { min-height: 48px; }
+  .row .lab { margin-bottom: 4px; }
+  #setup { gap: 6px; }
 }
