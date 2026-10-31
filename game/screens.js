@@ -53,6 +53,7 @@ const SERIES_LABEL = { 1: 'Single', 3: 'Best of 3', 5: 'Best of 5', 0: 'Endless'
 export function buildSetup(h, ow) {
   const root = el('section');
   root.id = 'setup';
+  const scroll = el('div', 'scroll');
   let sig = '';
   const personSeat = (p, ready, showReady) => {
     const s = el('div', 'seat plate');
@@ -80,12 +81,18 @@ export function buildSetup(h, ow) {
   };
   return {
     root,
+    /** The height the panel wants: its rows plus the Start button. */
+    contentHeight() {
+      const st = root.querySelector('.start-row');
+      return scroll.scrollHeight + (st ? st.offsetHeight : 0) + 36;
+    },
     update(m) {
       const next = JSON.stringify(m);
       if (next === sig) return;
       sig = next;
-      const keepScroll = root.scrollTop;
+      const keepScroll = scroll.scrollTop;
       root.textContent = '';
+      scroll.textContent = '';
       root.classList.toggle('wide', !!m.wide);
       const p = m.prefs;
       const rows = el('div', 'rows');
@@ -101,7 +108,7 @@ export function buildSetup(h, ow) {
         if (opp === 'computer') rows.appendChild(seg('Level', 'level', ['easy', 'normal', 'unbeatable'].map((v) => ({ value: v, label: LEVEL_NAMES[v] })), p.level, h.onPick, 'full'));
         if (opp === 'computer' || opp === 'same') rows.appendChild(seg(opp === 'same' ? 'Player 1' : 'Your mark', 'mark', [{ value: 'x', label: 'X', mark: 'x' }, { value: 'o', label: 'O', mark: 'o' }], p.mark, h.onPick, 'two'));
         rows.appendChild(seg('Board', 'board', [3, 4, 5].map((v) => ({ value: v, label: `${v}x${v}` })), p.board, h.onPick, ''));
-        rows.appendChild(seg('Series', 'series', [1, 3, 5, 0].map((v) => ({ value: v, label: SERIES_LABEL[v] })), p.series, h.onPick, 'wrap'));
+        rows.appendChild(seg('Series', 'series', [1, 3, 5, 0].map((v) => ({ value: v, label: SERIES_LABEL[v] })), p.series, h.onPick, 'wrap full'));
         if (opp === 'friend') rows.appendChild(seg('Turn timer', 'timer', [0, 15, 30].map((v) => ({ value: v, label: v ? `${v} s` : 'Off' })), p.timer, h.onPick, ''));
       } else {
         const line = [`${m.settings.board}x${m.settings.board}`, SERIES_LABEL[m.settings.series] ?? '', m.settings.timer ? `${m.settings.timer} s turns` : ''].filter(Boolean).join('  ·  ');
@@ -131,7 +138,9 @@ export function buildSetup(h, ow) {
         r.appendChild(seats);
         rows.appendChild(r);
       }
-      root.appendChild(rows);
+      scroll.appendChild(rows);
+      if (m.note) scroll.appendChild(el('div', 'note', m.note));
+      root.appendChild(scroll);
 
       const start = el('div', 'start-row');
       if (m.host) {
@@ -147,8 +156,7 @@ export function buildSetup(h, ow) {
         start.appendChild(b);
       }
       root.appendChild(start);
-      if (m.note) root.appendChild(el('div', 'note', m.note));
-      root.scrollTop = keepScroll;
+      scroll.scrollTop = keepScroll;
     },
   };
 }

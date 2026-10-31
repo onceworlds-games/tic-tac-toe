@@ -1,3 +1,5 @@
+@font-face { font-family: 'Archivo Black'; font-style: normal; font-weight: 400; font-display: swap; src: url(fonts/archivo-black.woff2) format('woff2'); }
+@font-face { font-family: 'Archivo'; font-style: normal; font-weight: 800; font-display: swap; src: url(fonts/archivo-800.woff2) format('woff2'); }
 :root {
   --ink: #f7eedb;
   --ink-dim: #cfc3a8;
@@ -47,10 +49,14 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
 .record { font: 800 18px/1 var(--body); color: var(--ink-dim); letter-spacing: .06em; text-transform: uppercase; text-shadow: 0 2px 0 rgba(0,0,0,.7); }
 
 /* ------------------------------------------------------------------ setup */
-#setup { position: absolute; display: flex; flex-direction: column; gap: 10px; padding: 12px; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; scrollbar-width: none; }
+#setup { position: absolute; display: flex; flex-direction: column; gap: 8px; padding: 12px; overflow: hidden; }
+#setup .scroll { padding-bottom: 6px; flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; scrollbar-width: none; }
+#setup .scroll::-webkit-scrollbar { display: none; }
 #setup::-webkit-scrollbar { display: none; }
-#setup .rows { display: grid; gap: 10px 14px; grid-template-columns: 1fr; }
-#setup.wide .rows { grid-template-columns: 1fr 1fr; }
+#setup .rows { display: grid; gap: 10px 14px; grid-template-columns: minmax(0, 1fr); }
+#setup.wide .rows { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+#setup .row { min-width: 0; }
+.seg button { min-width: 0; }
 #setup .row.full { grid-column: 1 / -1; }
 .row .lab { font: 800 16px/1 var(--body); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-dim); text-shadow: 0 2px 0 rgba(0,0,0,.8); margin: 0 0 6px 2px; }
 .seg { display: flex; gap: 8px; }
@@ -176,16 +182,37 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
   #banner .tape, #result .panel { animation: none; }
 }
 
-.start-row { position: sticky; bottom: 0; padding-top: 8px; z-index: 3; background: linear-gradient(rgba(30,18,10,0), rgba(30,18,10,.92) 35%); }
+.start-row { flex: none; }
+#setup .seg.wrap { flex-wrap: nowrap; }
+#setup .seg.wrap button { flex: 1 1 0; font-size: 16px; }
 #score.tight .card { padding: 6px 10px; }
 #score.tight .av { width: 40px; height: 40px; }
 #score.tight .flap { width: 40px; height: 50px; font-size: 40px; line-height: 50px; }
 #score.tight .mid { padding: 4px 10px; }
 #score.tight .flap.sm { width: 34px; height: 42px; font-size: 34px; line-height: 42px; }
 #score.tight .mid .cap { font-size: 16px; }
+@media (max-height: 640px) {
+  #setup .btn.big { min-height: 56px; font-size: 22px; }
+  #setup .rows { gap: 6px 12px; }
+}
 @media (max-height: 460px) {
   .seg button { min-height: 50px; }
   #actions .btn { min-height: 48px; }
   .row .lab { margin-bottom: 4px; }
   #setup { gap: 6px; }
+}
+
+@media (max-height: 460px) {
+  #setup { padding: 6px 10px; gap: 6px; }
+  .seg { gap: 6px; }
+  .seg button { min-height: 44px; font-size: 16px; }
+  .row .lab { font-size: 16px; margin: 0 0 3px 2px; }
+  #setup .rows { gap: 4px 12px; }
+  #setup .btn.big { min-height: 50px; font-size: 20px; }
+}
+
+@media (max-width: 440px) {
+  .seg { gap: 6px; }
+  .seg button { padding: 0 3px; font-size: 16px; letter-spacing: -.03em; }
+  #setup { padding: 8px 12px; }
 }

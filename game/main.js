@@ -242,8 +242,8 @@ async function boot(preview = '') {
         place(setup.root, { x: S.text.x, y: S.text.y, w: S.text.w, h: S.text.h - bottomClear });
       } else {
         const topPad = Math.round((reserved || []).find((r) => r && r.kind === 'menu') ? 0 : 0) + 64;
-        const content = setup.root.scrollHeight || 380;
-        const panelH = Math.max(260, Math.min(content + 8, Math.round(h * 0.7) - bottomClear));
+        const content = setup.contentHeight() || 380;
+        const panelH = Math.max(260, Math.min(content + 8, Math.round(h * 0.88) - bottomClear));
         const pad = 12;
         const boardArea = h - topPad - panelH - bottomClear - pad;
         const s = Math.floor(Math.max(110, Math.min(w - pad * 2, boardArea / 1.03, h * 0.4)));
@@ -577,7 +577,7 @@ async function boot(preview = '') {
       if (L.landscape) {
         bannerEl.style.left = `${Math.round(L.score.x + L.score.w / 2)}px`;
         bannerEl.style.top = `${Math.round(L.actions.y - 36)}px`;
-        bannerEl.style.fontSize = `${Math.round(Math.min(L.score.w * 0.1, 30))}px`;
+        bannerEl.style.fontSize = `${Math.round(Math.max(16, Math.min(30, (L.score.w * 0.95) / (text.length * 0.78 + 3.4))))}px`;
         bannerEl.style.maxWidth = `${L.score.w + L.pad * 2}px`;
       } else {
         bannerEl.style.maxWidth = '';
@@ -960,8 +960,9 @@ async function boot(preview = '') {
       title.update({ record: totalLine() });
     } else if (screen === 'setup') {
       setup.update(setupModel());
-      if (setup.root.scrollHeight && Math.abs((setup.root.dataset.sh | 0) - setup.root.scrollHeight) > 2) {
-        setup.root.dataset.sh = String(setup.root.scrollHeight);
+      const ch = setup.contentHeight();
+      if (ch && Math.abs((setup.root.dataset.sh | 0) - ch) > 2) {
+        setup.root.dataset.sh = String(ch);
         layout();
       }
     } else if (screen === 'play' && v) {

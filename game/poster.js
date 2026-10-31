@@ -171,8 +171,7 @@ export async function runPoster(name) {
     const r = new Renderer(cv);
     r.resize(w, h, 1);
     try {
-      await document.fonts.load('40px "Archivo Black"');
-      await document.fonts.ready;
+      await Promise.race([document.fonts.load('40px "Archivo Black"').then(() => document.fonts.ready), new Promise((r) => setTimeout(r, 3000))]);
     } catch {}
     const rnd = seeded(7);
     const realRandom = Math.random;

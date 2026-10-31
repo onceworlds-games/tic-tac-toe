@@ -72,8 +72,11 @@ export function stageLayout(w, h, reserved = null, { panel = 0 } = {}) {
   const pad = clamp(Math.round(Math.min(w, h) * 0.04), 10, 24);
   if (landscape) {
     const half = Math.round(w * (panel ? 0.46 : 0.5));
-    const s = Math.floor(Math.max(120, Math.min(half - pad * 2, h - pad * 2 - (panel ? 0 : 0))));
-    return { landscape, board: { x: Math.round((half - s) / 2), y: Math.round((h - s) / 2), s }, text: { x: half, y: topPad, w: w - half - pad, h: h - topPad - pad }, topPad, pad };
+    // the platform's pill is top-left: the board starts under it; the panel is on the other side and uses the full height
+    const s = Math.floor(Math.max(120, Math.min(half - pad * 2, h - (panel ? topPad : pad * 2) - pad)));
+    const by = panel ? Math.round(topPad + (h - topPad - pad - s) / 2) : Math.round((h - s) / 2);
+    const ty = panel ? Math.min(pad, 8) : topPad;
+    return { landscape, board: { x: Math.round((half - s) / 2), y: by, s }, text: { x: half, y: ty, w: w - half - pad, h: h - ty - Math.min(pad, 8) }, topPad, pad };
   }
   const top = topPad;
   const free = h - top - pad;
