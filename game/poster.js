@@ -114,14 +114,14 @@ function badge(r, ctx, id, w) {
     ctx.lineTo(S * 0.3, S * 0.85);
     ctx.stroke();
   } else if (id === 'hat-trick') {
-    for (let i = -1; i <= 1; i++) {
-      stroke(PAL.cream, S * 0.2);
-      ctx.beginPath();
-      ctx.moveTo(i * S * 0.7 - S * 0.2, S * 0.5);
-      ctx.lineTo(i * S * 0.7 - S * 0.2, -S * 0.5);
-      ctx.lineTo(i * S * 0.7 + S * 0.25, S * 0.5);
-      ctx.stroke();
-    }
+    // a big "3" and three small marks under it
+    ctx.shadowColor = 'transparent';
+    ctx.fillStyle = PAL.cream;
+    ctx.font = `${Math.round(S * 1.7)}px "Archivo Black", Impact, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('3', 0, -S * 0.15);
+    for (const dx of [-1, 0, 1]) xMark(dx * S * 0.62, S * 0.9, S * 0.2, PAL.o.hi);
   } else if (id === 'big-board') {
     const n = 5;
     const cs = (S * 2) / n;
@@ -200,7 +200,7 @@ export async function runPoster(name) {
     } else if (name === 'win') {
       const n = 4;
       const board = { x: 450, y: 118, s: 580 };
-      const cells = grid(n, { x: [0, 5, 10, 15, 3, 8], o: [1, 2, 4, 6, 9, 12, 7] });
+      const cells = grid(n, { x: [0, 5, 10, 15, 3, 8, 13], o: [1, 2, 4, 6, 9, 12] });
       const fx = new Fx();
       fx.confetti(w, h, [PAL.x.base, PAL.o.base, PAL.cream, '#7fb2ff'], 140);
       for (let i = 0; i < 24; i++) fx.update(0.05);

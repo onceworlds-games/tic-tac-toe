@@ -139,10 +139,10 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
 
 /* ------------------------------------------------------------------ banner and results */
 #banner { font-size: 40px; position: absolute; left: 50%; top: 50%; z-index: 4; pointer-events: none; transform: translate(-50%, -50%) rotate(-2deg); max-width: 94vw; text-align: center; }
-#banner .tape { position: relative; padding: .28em .8em .3em; background: var(--ink); color: #2a1308; font: 400 1em/1 var(--display); text-transform: uppercase; letter-spacing: .02em; white-space: nowrap; clip-path: polygon(0 4%, 2% 0, 4% 6%, 6% 0, 94% 0, 96% 6%, 98% 0, 100% 4%, 100% 96%, 98% 100%, 96% 94%, 94% 100%, 6% 100%, 4% 94%, 2% 100%, 0 96%); filter: drop-shadow(0 8px 0 rgba(0,0,0,.45)); animation: slap .45s cubic-bezier(.2,1.5,.4,1) both; display: flex; align-items: center; justify-content: center; gap: 14px; }
-#banner .tape::before, #banner .tape::after { content: ''; position: absolute; left: 0; right: 0; height: 6px; background: var(--edge, var(--coral)); }
-#banner .tape::before { top: 10px; }
-#banner .tape::after { bottom: 10px; }
+#banner .tape { position: relative; padding: .42em .8em .44em; background: var(--ink); color: #2a1308; font: 400 1em/1 var(--display); text-transform: uppercase; letter-spacing: .02em; white-space: nowrap; clip-path: polygon(0 4%, 2% 0, 4% 6%, 6% 0, 94% 0, 96% 6%, 98% 0, 100% 4%, 100% 96%, 98% 100%, 96% 94%, 94% 100%, 6% 100%, 4% 94%, 2% 100%, 0 96%); filter: drop-shadow(0 8px 0 rgba(0,0,0,.45)); animation: slap .45s cubic-bezier(.2,1.5,.4,1) both; display: flex; align-items: center; justify-content: center; gap: 14px; }
+#banner .tape::before, #banner .tape::after { content: ''; position: absolute; left: 0; right: 0; height: .11em; background: var(--edge, var(--coral)); }
+#banner .tape::before { top: .12em; }
+#banner .tape::after { bottom: .12em; }
 #banner .g { width: 1.05em; height: 1.05em; }
 #banner .g.x { color: var(--coral-lo); }
 #banner .g.o { color: var(--gold-lo); }

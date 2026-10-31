@@ -246,7 +246,7 @@ async function boot(preview = '') {
         const panelH = Math.max(260, Math.min(content + 8, Math.round(h * 0.7) - bottomClear));
         const pad = 12;
         const boardArea = h - topPad - panelH - bottomClear - pad;
-        const s = Math.floor(Math.max(110, Math.min(w - pad * 2, boardArea)));
+        const s = Math.floor(Math.max(110, Math.min(w - pad * 2, boardArea / 1.03, h * 0.4)));
         L = { board: { x: Math.round((w - s) / 2), y: topPad + Math.max(0, Math.round((boardArea - s) / 2)), s } };
         place(setup.root, { x: 0, y: h - panelH - bottomClear, w, h: panelH });
       }
@@ -571,12 +571,19 @@ async function boot(preview = '') {
     bannerEl.style.width = '';
     bannerEl.style.height = '';
     if (L) {
-      // portrait: in the free space above the board; landscape: across the board
-      const above = !L.landscape && L.status.y > L.board.y - 120;
-      bannerEl.style.left = `${Math.round(L.board.x + L.board.s / 2)}px`;
-      bannerEl.style.top = `${Math.round(L.landscape ? L.board.y + L.board.s / 2 : Math.max(L.score.y + L.score.h + 44, L.board.y - 46))}px`;
-      bannerEl.style.fontSize = `${Math.round(Math.min(L.board.s * 0.115, 56))}px`;
-      void above;
+      // never over the board: above it in portrait, over the side column in landscape
+      const size = Math.round(Math.min(L.board.s * 0.115, 56));
+      bannerEl.style.fontSize = `${size}px`;
+      if (L.landscape) {
+        bannerEl.style.left = `${Math.round(L.score.x + L.score.w / 2)}px`;
+        bannerEl.style.top = `${Math.round(L.actions.y - 36)}px`;
+        bannerEl.style.fontSize = `${Math.round(Math.min(L.score.w * 0.1, 30))}px`;
+        bannerEl.style.maxWidth = `${L.score.w + L.pad * 2}px`;
+      } else {
+        bannerEl.style.maxWidth = '';
+        bannerEl.style.left = `${Math.round(L.board.x + L.board.s / 2)}px`;
+        bannerEl.style.top = `${Math.round(Math.max(L.score.y + L.score.h + 44, L.board.y - 46))}px`;
+      }
     }
   }
 

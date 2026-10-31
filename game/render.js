@@ -176,7 +176,7 @@ export class Renderer {
     ctx.scale(scale, scale);
     ctx.translate(-(x + s / 2), -(y + s / 2));
 
-    const thick = s * 0.04;
+    const thick = s * 0.025;
     const rad = s * 0.055;
     // soft shadow on the table
     ctx.save();
