@@ -1,0 +1,25 @@
+{
+  "slug": "tic-tac-toe",
+  "name": "Tic Tac Toe",
+  "description": "X or O, three in a row. Against the computer, a friend online, or on one screen.",
+  "dir": "game",
+  "productionBranch": "main",
+  "genre": "Strategy",
+  "icon": "store/icon.png",
+  "thumbnails": ["store/thumb-1.png", "store/thumb-2.png", "store/thumb-3.png"],
+  "controls": [
+    { "keys": ["Click", "Tap"], "action": "Place your mark" },
+    { "keys": ["Arrows"], "action": "Move the cursor" },
+    { "keys": ["Enter", "Space"], "action": "Place at the cursor" },
+    { "keys": ["1-9"], "action": "Place on a 3x3 board" },
+    { "keys": ["Z"], "action": "Undo (computer, same screen)" },
+    { "keys": ["H"], "action": "Hint (computer)" }
+  ],
+  "badges": [
+    { "id": "first-win", "name": "Three in a Row", "description": "Win a game against the computer.", "icon": "store/badge-first-win.png" },
+    { "id": "stalemate", "name": "Stalemate", "description": "Draw against Unbeatable on 3x3.", "icon": "store/badge-stalemate.png" },
+    { "id": "hat-trick", "name": "Hat Trick", "description": "Win three games in a row.", "icon": "store/badge-hat-trick.png" },
+    { "id": "big-board", "name": "Big Board", "description": "Win on 5x5 against Normal or Unbeatable.", "icon": "store/badge-big-board.png" },
+    { "id": "friend-win", "name": "Bragging Rights", "description": "Win a series against a friend online.", "icon": "store/badge-friend-win.png" }
+  ]
+}
