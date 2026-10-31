@@ -283,8 +283,10 @@ async function boot(preview = '') {
     localId++;
   }
 
+  let leavingUntil = 0;
   function backToSetup() {
     audio.tap();
+    leavingUntil = clock + 2;
     if (local) {
       stopLocal();
       showScreen('setup');
@@ -491,7 +493,7 @@ async function boot(preview = '') {
     // how the game ended
     if (v.game.ok && v.game.status !== 'play' && anim.endedKey !== key) {
       anim.endedKey = key;
-      onEnded(v, key, quiet, v.data.moves.length > 0 && anim.shownEarly);
+      onEnded(v, key, quiet);
     }
   }
 
@@ -505,6 +507,7 @@ async function boot(preview = '') {
       anim.winner = v.game.winner;
       anim.lineAt = late ? clock - 5 : clock + 0.2;
     } else if (v.game.status === 'draw') anim.drawAt = late ? clock - 5 : clock + 0.15;
+    if (late) gamesCounted.add(key); // finished before this page looked: already counted
     if (late || quiet) {
       showBanner(v, key);
       return;
@@ -541,7 +544,7 @@ async function boot(preview = '') {
 
   function showBanner(v, key) {
     const res = v.result;
-    if (!res) return;
+    if (!res || screen !== 'play') return;
     let text = '';
     let edge = PAL.cream;
     const mark = res.mark;
@@ -581,7 +584,6 @@ async function boot(preview = '') {
   const gamesCounted = new Set();
   function countGame(v, key) {
     if (!v.result || gamesCounted.has(key) || v.spectating || v.mode === 'demo') return;
-    if (anim.silentEnd) return;
     gamesCounted.add(key);
     if (v.mode === 'same') {
       stats.same += 1;
@@ -630,10 +632,9 @@ async function boot(preview = '') {
     if (v.mode === 'friend' && v.champion && v.champion !== 'draw' && v.champion.me && !v.ff && !v.spectating) award('friend-win');
     if (v.champion && v.champion !== 'draw' && v.champion.me && v.mode !== 'demo' && v.mode !== 'same') {
       audio.fanfare();
-      if (!late(v)) fx.confetti(w, h, [PAL.x.base, PAL.o.base, PAL.cream, '#7fb2ff'], 160);
+      fx.confetti(w, h, [PAL.x.base, PAL.o.base, PAL.cream, '#7fb2ff'], 160);
     }
   }
-  const late = () => false;
 
   // ---------------------------------------------------------------- actions
   function doMove(cell) {
@@ -827,8 +828,13 @@ async function boot(preview = '') {
   function roomMatchChanged() {
     if (!online) return;
     const phase = room.match.phase;
-    if (phase !== 'lobby' && screen !== 'play') showScreen('play');
-    else if (phase === 'lobby' && screen === 'play' && !local) showScreen('setup');
+    if (phase !== 'lobby' && screen !== 'play') {
+      if (clock < leavingUntil) return;
+      showScreen('play');
+    } else if (phase === 'lobby' && screen === 'play' && !local) {
+      if (wantStart > 0 || autoReady) return; // a rematch is on its way
+      showScreen('setup');
+    }
   }
   if (room && usable) {
     for (const ev of ['match', 'matchstart', 'matchend']) room.on(ev, roomMatchChanged);

@@ -28,7 +28,7 @@ export function playLayout(w, h, reserved = null, opts = {}) {
     const areaX = colX + colW + pad;
     const areaW = w - areaX - pad;
     const boardTop = pad + statusH;
-    const s = Math.floor(Math.max(120, Math.min(areaW, h - boardTop - pad)));
+    const s = Math.floor(Math.max(120, Math.min(areaW, (h - boardTop - pad) / 1.06)));
     const bx = Math.round(areaX + (areaW - s) / 2);
     const by = Math.round(boardTop + (h - boardTop - pad - s) / 2);
     return {
@@ -49,7 +49,7 @@ export function playLayout(w, h, reserved = null, opts = {}) {
   const freeTop = scoreY + scoreH + 4;
   const freeBottom = h - bottomPad - actionsH - 6;
   const availH = freeBottom - freeTop - statusH;
-  const s = Math.floor(Math.max(120, Math.min(w - pad * 2, availH)));
+  const s = Math.floor(Math.max(120, Math.min(w - pad * 2, availH / 1.03)));
   const by = Math.round(freeTop + statusH + Math.max(0, (availH - s) / 2));
   const bx = Math.round((w - s) / 2);
   return {

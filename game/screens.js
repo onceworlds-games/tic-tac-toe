@@ -63,7 +63,16 @@ export function buildSetup(h, ow) {
     s.appendChild(t);
     if (showReady) {
       const ok = el('span', 'ok' + (ready ? '' : ' no'));
-      ok.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      const NS = 'http://www.w3.org/2000/svg';
+      const svg = document.createElementNS(NS, 'svg');
+      svg.setAttribute('viewBox', '0 0 24 24');
+      svg.setAttribute('width', '18');
+      svg.setAttribute('height', '18');
+      const path = document.createElementNS(NS, 'path');
+      path.setAttribute('d', 'M5 12.5l4.5 4.5L19 7.5');
+      for (const [k, v] of Object.entries({ fill: 'none', stroke: 'currentColor', 'stroke-width': '3.4', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' })) path.setAttribute(k, v);
+      svg.appendChild(path);
+      ok.appendChild(svg);
       ok.setAttribute('aria-label', ready ? 'Ready' : 'Not ready');
       s.appendChild(ok);
     }
