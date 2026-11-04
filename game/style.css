@@ -39,13 +39,6 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
 .btn.primary:active:not(:disabled) { box-shadow: 0 1px 0 #5a3606; }
 .btn.big { min-height: 68px; font-size: 26px; padding: 0 34px; }
 
-/* ------------------------------------------------------------------ title */
-#title { position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; text-align: center; }
-.logo { font: 400 clamp(54px, 12vw, 92px)/.9 var(--display); text-transform: uppercase; color: var(--ink); letter-spacing: .01em; filter: drop-shadow(0 6px 0 rgba(0,0,0,.35)); }
-.logo span { display: block; }
-.logo .l1 { color: var(--ink); text-shadow: 0 5px 0 #6c5b3d; }
-.logo .l2 { color: var(--coral); text-shadow: 0 5px 0 var(--coral-lo); transform: rotate(-2deg); }
-.logo .l3 { color: var(--gold); text-shadow: 0 5px 0 var(--gold-lo); transform: rotate(1.5deg); }
 .record { font: 800 18px/1 var(--body); color: var(--ink-dim); letter-spacing: .06em; text-transform: uppercase; text-shadow: 0 2px 0 rgba(0,0,0,.7); }
 
 /* ------------------------------------------------------------------ setup */
@@ -75,8 +68,6 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
 .seat .sub { font: 800 16px/1.1 var(--body); color: var(--ink-dim); display: block; }
 .seat.empty { border-style: dashed; border-color: #6a5236; background: rgba(20,12,7,.55); box-shadow: none; color: var(--ink); width: 100%; text-align: left; }
 .seat.empty .plus { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; border: 2px dashed var(--brass); color: var(--brass); font: 400 28px/1 var(--display); flex: none; }
-.seat .ok { margin-left: auto; width: 28px; height: 28px; border-radius: 50%; background: #5fd08a; color: #0b2e18; display: grid; place-items: center; flex: none; }
-.seat .ok.no { background: #3a2a1d; color: #6a5236; }
 .vs { font: 400 18px/1 var(--display); color: var(--ink-dim); }
 .start-row { display: flex; gap: 10px; align-items: center; margin-top: 2px; }
 .start-row .btn { flex: 1; }

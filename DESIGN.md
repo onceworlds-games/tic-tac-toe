@@ -23,7 +23,7 @@ avatar is the same shape.
 - **Computer**: Easy / Normal / Unbeatable, pick X or O. A room match with the computer in a bot seat.
 - **Same screen**: two people, "Player 1" and "Player 2", no room; offered only while alone, ends if a friend joins.
 - **Friend**: a friends game (`private: true`, 2 seats). The host picks the settings and starts; the friend readies.
-  If a friend is in the lobby the game is a friend game (the platform needs them ready for the host to start).
+  If a friend is in the lobby the game is a friend game (the platform's strip has them ready up and the host start).
   A friend arriving during a game against the computer watches it.
 
 Marks swap every game, so the starter alternates (X always moves first). The score is per player, with draws between.
@@ -45,12 +45,12 @@ worker it runs on the page. It thinks 0.4 to 1.2 s like a person, with a "thinki
 - `online.js` the host's rules on the SDK helpers: `createMatch` (a series, one game per round, `over` ends it early),
   `createHost` (`move`, `undo`, `finish` rpcs with validation, series state under `host:`), `createBots` seats the computer,
   a driver plays its moves through the same rpc. Turn timer (friends only) in `onTick`: Off / 15 s / 30 s, a default move on time-out.
-- `local.js` the same series without a room (same screen, the title demo, a computer game outside Onceworlds).
+- `local.js` the same series on this page (same screen, inside the room's match; a computer game outside Onceworlds).
 - `view.js` one view for every mode; `render.js` canvas; `ui.js`, `screens.js` DOM; `main.js` the glue.
 - A page opened as `?poster=<name>` draws the store art; `?poster=ui-<screen>[-WxH]` shows a screen in a fixed state.
 
 ## First minute
-Title (the board playing itself) > Play > one setup screen (Computer is already chosen, Start is lit) > the first move.
+The game joins as it loads: one setup screen (Computer is already chosen) with the platform's strip under it > Start > its one countdown > the first move. After a series the result stays up with the same strip under it; Setup goes back to the screen.
 Hints only where they matter: "Your move".
 
 ## Tests

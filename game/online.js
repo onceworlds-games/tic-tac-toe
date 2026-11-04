@@ -7,7 +7,7 @@ import { chooseMove, thinkSeconds } from './ai.js';
 import { createDriver } from './brain.js';
 import { buildView } from './view.js';
 
-/** What the host picks, drawn by the game's own setup screen (lobby: 'game'). */
+/** What the host picks, drawn by the game's own setup screen (the platform's strip starts it). */
 export const LOBBY_SETTINGS = [
   { id: 'opponent', label: 'Opponent', options: [{ value: 'computer', label: 'Computer' }, { value: 'friend', label: 'Friend' }], default: 'computer' },
   { id: 'board', label: 'Board', options: [{ value: 3, label: '3x3' }, { value: 4, label: '4x4' }, { value: 5, label: '5x5' }], default: 3 },
@@ -47,7 +47,7 @@ export function createOnline(room, h, opts = {}) {
     const v = Number(settings()[id]);
     return Number.isFinite(v) ? v : DEFAULTS[id];
   };
-  // Two people in the match is a game between friends, whatever the lobby said (a friend who is in the lobby has to ready for the host to start).
+  // Two people in the match is a game between friends, whatever the lobby said.
   const opponent = () => {
     if (room.match.phase !== 'lobby' && (room.match.participants || []).length >= 2) return 'friend';
     return settings().opponent === 'friend' ? 'friend' : 'computer';
@@ -158,7 +158,7 @@ export function createOnline(room, h, opts = {}) {
     rounds: 'series',
     maxRounds: 500,
     roundEndSeconds: 3,
-    resultsSeconds: 0,
+    resultsSeconds: 3,
     tick: 100,
     data: dataSchema,
     startRound(m) {
@@ -208,7 +208,8 @@ export function createOnline(room, h, opts = {}) {
       bots.setFill(fillFor());
       const d = match.data;
       let spec = null;
-      if (match.isHost && match.phase === 'round' && !match.paused && d) {
+      // opts.quiet: this page plays a same-screen series inside the match
+      if (!opts.quiet?.() && match.isHost && match.phase === 'round' && !match.paused && d) {
         const r = describe(d);
         if (r.ok && r.status === 'play') {
           const seatId = r.next === 'x' ? d.x : d.o;
@@ -242,13 +243,13 @@ export function createOnline(room, h, opts = {}) {
     return { id: s.id, name: s.name, bot: s.bot, me: s.me, away: s.away, left: s.left, avatarId: s.bot ? null : s.id };
   }
 
-  /** extras: { hintsLeft } */
+  /** extras: { hintsLeft, results: show the last series' result back in the lobby } */
   function view(extras = {}) {
     const S = series.get();
     const mp = match.phase;
     const d = match.data;
     let phase = 'wait';
-    if (mp === 'results') phase = 'results';
+    if (mp === 'results' || (mp === 'lobby' && extras.results && match.results)) phase = 'results';
     else if (mp === 'roundEnd') phase = 'between';
     else if (mp === 'round' && d) phase = describe(d).status === 'play' ? 'play' : 'between';
     const left = d && d.dl > 0 && phase === 'play' ? Math.max(0, (d.dl - room.matchNow()) / 1000) : null;

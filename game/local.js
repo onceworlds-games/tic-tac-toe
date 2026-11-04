@@ -1,4 +1,4 @@
-// A series on one screen with no room: two people on one device, the title screen's demo (two computers), or a game against the
+// A series on one screen with no room: two people on one device, a demo of two computers, or a game against the
 // computer when the page runs outside Onceworlds. Same data and view as a room match, driven by tick().
 import { boardFor } from './rules.js';
 import { describe, newGame, play, undo as undoGame, markOf, seriesState } from './core.js';

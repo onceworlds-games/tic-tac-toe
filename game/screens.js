@@ -1,4 +1,4 @@
-// The title, the setup (the game's lobby) and the series result, built from plain models. Each returns { root, update(model) }.
+// The setup (what the platform's strip starts) and the series result, built from plain models. Each returns { root, update(model) }.
 import { el, glyph, avatar, Flap } from './ui.js';
 import { LEVEL_NAMES } from './core.js';
 
@@ -20,71 +20,42 @@ function seg(label, id, options, value, onPick, cls = '') {
   return row;
 }
 
-export function buildTitle({ onPlay }) {
-  const root = el('section');
-  root.id = 'title';
-  const logo = el('h1', 'logo');
-  logo.append(el('span', 'l1', 'Tic'), el('span', 'l2', 'Tac'), el('span', 'l3', 'Toe'));
-  const play = el('button', 'btn primary big', 'Play');
-  play.type = 'button';
-  play.addEventListener('click', onPlay);
-  const rec = el('div', 'record');
-  root.append(logo, play, rec);
-  return {
-    root,
-    play,
-    update(m) {
-      rec.textContent = m.record || '';
-      rec.hidden = !m.record;
-    },
-  };
-}
-
 const SERIES_LABEL = { 1: 'Single', 3: 'Best of 3', 5: 'Best of 5', 0: 'Endless' };
 
 /**
  * model: {
  *   host (can change things), standalone, wide, prefs {opponent, level, mark, board, series, timer},
- *   alone, friend {name, avatarId, ready} | null, me {name, avatarId, ready}, hostPlayer {name, avatarId},
- *   canStart, startLabel, note
+ *   alone, friend {name, avatarId} | null, me {name, avatarId}, hostPlayer {name, avatarId},
+ *   ownStart: draw a Start because no platform lobby is there to
  * }
- * handlers: onPick(id, value), onStart(), onInvite(), onReady()
+ * handlers: onPick(id, value), onStart(), onInvite()
  */
 export function buildSetup(h, ow) {
   const root = el('section');
   root.id = 'setup';
   const scroll = el('div', 'scroll');
   let sig = '';
-  const personSeat = (p, ready, showReady) => {
+  const personSeat = (p) => {
     const s = el('div', 'seat plate');
     s.appendChild(avatar(p, { ow }));
     const t = el('div');
     t.style.minWidth = '0';
     t.appendChild(el('div', 'nm', p.name));
     s.appendChild(t);
-    if (showReady) {
-      const ok = el('span', 'ok' + (ready ? '' : ' no'));
-      const NS = 'http://www.w3.org/2000/svg';
-      const svg = document.createElementNS(NS, 'svg');
-      svg.setAttribute('viewBox', '0 0 24 24');
-      svg.setAttribute('width', '18');
-      svg.setAttribute('height', '18');
-      const path = document.createElementNS(NS, 'path');
-      path.setAttribute('d', 'M5 12.5l4.5 4.5L19 7.5');
-      for (const [k, v] of Object.entries({ fill: 'none', stroke: 'currentColor', 'stroke-width': '3.4', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' })) path.setAttribute(k, v);
-      svg.appendChild(path);
-      ok.appendChild(svg);
-      ok.setAttribute('aria-label', ready ? 'Ready' : 'Not ready');
-      s.appendChild(ok);
-    }
     return s;
   };
+  // a click leaves the focus with the game: Enter is the platform's Start or Ready while the lobby is up
+  root.addEventListener('pointerdown', (e) => {
+    if (e.target instanceof Element && e.target.closest('button')) e.preventDefault();
+  });
   return {
     root,
-    /** The height the panel wants: its rows plus the Start button. */
+    /** The height the panel wants: its rows, and the Start button when there is no room around the game. */
     contentHeight() {
       const st = root.querySelector('.start-row');
-      return scroll.scrollHeight + (st ? st.offsetHeight : 0) + 36;
+      // The rows themselves: the scroll box stretches to the panel, so its own height would only ever grow.
+      const rows = [...scroll.children].reduce((sum, c) => sum + c.offsetHeight, 0);
+      return rows + 6 + (st ? st.offsetHeight + 8 : 0) + 24;
     },
     update(m) {
       const next = JSON.stringify(m);
@@ -102,8 +73,14 @@ export function buildSetup(h, ow) {
         if (!m.friend) {
           const options = [{ value: 'computer', label: 'Computer' }];
           if (m.alone) options.push({ value: 'same', label: 'Same screen' });
-          if (!m.standalone) options.push({ value: 'friend', label: 'Friend' });
-          if (options.length > 1) rows.appendChild(seg('Play', 'opponent', options, opp, h.onPick, 'full'));
+          const row = seg('Play', 'opponent', options, opp, h.onPick, 'full');
+          if (!m.standalone) {
+            const invite = el('button', null, 'Invite');
+            invite.type = 'button';
+            invite.addEventListener('click', h.onInvite);
+            row.querySelector('.seg').appendChild(invite);
+          }
+          rows.appendChild(row);
         }
         if (opp === 'computer') rows.appendChild(seg('Level', 'level', ['easy', 'normal', 'unbeatable'].map((v) => ({ value: v, label: LEVEL_NAMES[v] })), p.level, h.onPick, 'full'));
         if (opp === 'computer' || opp === 'same') rows.appendChild(seg(opp === 'same' ? 'Player 1' : 'Your mark', 'mark', [{ value: 'x', label: 'X', mark: 'x' }, { value: 'o', label: 'O', mark: 'o' }], p.mark, h.onPick, 'two'));
@@ -120,49 +97,33 @@ export function buildSetup(h, ow) {
         rows.appendChild(r);
       }
 
-      if (opp === 'friend' || !m.host) {
+      if (m.friend || !m.host) {
         const r = el('div', 'row full');
         const seats = el('div', 'seats');
-        seats.appendChild(personSeat(m.host ? m.me : m.hostPlayer, true, false));
+        seats.appendChild(personSeat(m.host ? m.me : m.hostPlayer));
         seats.appendChild(el('div', 'vs', 'vs'));
-        if (m.host) {
-          if (m.friend) seats.appendChild(personSeat(m.friend, m.friend.ready, true));
-          else {
-            const b = el('button', 'seat empty plate');
-            b.type = 'button';
-            b.append(el('span', 'plus', '+'), el('span', 'nm', 'Invite'));
-            b.addEventListener('click', h.onInvite);
-            seats.appendChild(b);
-          }
-        } else seats.appendChild(personSeat(m.me, m.me.ready, true));
+        seats.appendChild(personSeat(m.host ? m.friend : m.me));
         r.appendChild(seats);
         rows.appendChild(r);
       }
       scroll.appendChild(rows);
-      if (m.note) scroll.appendChild(el('div', 'note', m.note));
       root.appendChild(scroll);
 
-      const start = el('div', 'start-row');
-      if (m.host) {
-        const b = el('button', 'btn primary big', m.startLabel);
+      if (m.ownStart) {
+        const start = el('div', 'start-row');
+        const b = el('button', 'btn primary big', 'Start');
         b.type = 'button';
-        b.disabled = !m.canStart;
         b.addEventListener('click', h.onStart);
         start.appendChild(b);
-      } else {
-        const b = el('button', 'btn primary big', m.me.ready ? `Waiting for ${m.hostPlayer.name}` : 'Ready');
-        b.type = 'button';
-        b.addEventListener('click', h.onReady);
-        start.appendChild(b);
+        root.appendChild(start);
       }
-      root.appendChild(start);
       scroll.scrollTop = keepScroll;
     },
   };
 }
 
 /**
- * The series result. model: { champion: player|'draw', a, b, state:{a,b,d}, why, canRematch, canSetup, rematchLabel, record, mine }
+ * The series result. model: { champion: player|'draw', a, b, state:{a,b,d}, why, canSetup, record }
  */
 export function buildResult(h, ow) {
   const root = el('div');
@@ -172,7 +133,7 @@ export function buildResult(h, ow) {
   return {
     root,
     update(m) {
-      const next = JSON.stringify([m.champion && m.champion.id, m.championDraw, m.a && m.a.id, m.b && m.b.id, m.state, m.why, m.canRematch, m.canSetup, m.rematchLabel, m.record, m.waiting]);
+      const next = JSON.stringify([m.champion && m.champion.id, m.championDraw, m.a && m.a.id, m.b && m.b.id, m.state, m.why, m.canSetup, m.record]);
       if (next === sig) return;
       sig = next;
       root.textContent = '';
@@ -199,13 +160,6 @@ export function buildResult(h, ow) {
       if (m.why) panel.appendChild(el('div', 'why', m.why));
       if (m.record) panel.appendChild(el('div', 'record', m.record));
       const btns = el('div', 'btns');
-      if (m.canRematch) {
-        const r = el('button', 'btn primary', m.rematchLabel);
-        r.type = 'button';
-        r.disabled = !!m.waiting;
-        r.addEventListener('click', h.onRematch);
-        btns.appendChild(r);
-      }
       if (m.canSetup) {
         const s = el('button', 'btn', 'Setup');
         s.type = 'button';

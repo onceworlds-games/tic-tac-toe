@@ -8,7 +8,7 @@ import { createBrain } from './brain.js';
 import { createLocal } from './local.js';
 import { createOnline, LOBBY_SETTINGS, DEFAULTS } from './online.js';
 import { el, glyph, avatar, Scoreboard, place } from './ui.js';
-import { buildTitle, buildSetup, buildResult } from './screens.js';
+import { buildSetup, buildResult } from './screens.js';
 import { LEVEL_NAMES } from './core.js';
 import { statusText } from './view.js';
 
@@ -30,7 +30,7 @@ async function importHelpers() {
 async function boot(preview = '') {
   const ow = preview ? null : window.onceworlds || null;
   // Join first, before anything is built, so a reload keeps its seat.
-  const joining = ow && ow.rooms && ow.rooms.join ? Promise.resolve(ow.rooms.join({ private: true, maxPlayers: 2, minPlayers: 1, lobby: 'game', countdown: 0, settings: LOBBY_SETTINGS })).catch(() => null) : Promise.resolve(null);
+  const joining = ow && ow.rooms && ow.rooms.join ? Promise.resolve(ow.rooms.join({ private: true, maxPlayers: 2, minPlayers: 1, lobby: 'bar', settings: LOBBY_SETTINGS })).catch(() => null) : Promise.resolve(null);
   const helpersP = importHelpers();
 
   const cv = document.getElementById('cv');
@@ -61,7 +61,7 @@ async function boot(preview = '') {
   };
   const sanitizePrefs = (p) => {
     if (!p || typeof p !== 'object') return;
-    if (['computer', 'same', 'friend'].includes(p.opponent)) prefs.opponent = p.opponent;
+    if (['computer', 'same'].includes(p.opponent)) prefs.opponent = p.opponent;
     if (['easy', 'normal', 'unbeatable'].includes(p.level)) prefs.level = p.level;
     if (p.mark === 'x' || p.mark === 'o') prefs.mark = p.mark;
     if ([3, 4, 5].includes(p.board)) prefs.board = p.board;
@@ -94,7 +94,7 @@ async function boot(preview = '') {
   let online = null;
   if (room && helpers) {
     try {
-      online = createOnline(room, helpers, { brain });
+      online = createOnline(room, helpers, { brain, quiet: () => !!local });
     } catch (e) {
       console.error('[tic-tac-toe] room setup failed', e);
     }
@@ -103,9 +103,8 @@ async function boot(preview = '') {
   if (room) room.on('error', (e) => console.warn('[tic-tac-toe] room:', e && e.code, e && e.message));
 
   // ---------------------------------------------------------------- the DOM
-  const title = buildTitle({ onPlay: () => onPlay() });
-  const setup = buildSetup({ onPick, onStart: () => startFromSetup(), onInvite: () => ow?.ui?.showInvite?.(), onReady: () => toggleReady() }, ow);
-  const result = buildResult({ onRematch: () => rematch(), onSetup: () => backToSetup() }, ow);
+  const setup = buildSetup({ onPick, onStart: () => startWithoutRoom(), onInvite: () => ow?.ui?.showInvite?.() }, ow);
+  const result = buildResult({ onSetup: () => backToSetup() }, ow);
   const scoreEl = el('div');
   scoreEl.id = 'score';
   const statusEl = el('div');
@@ -125,12 +124,12 @@ async function boot(preview = '') {
   const hintBtn = btn('Hint');
   const quitBtn = btn('Quit');
   actionsEl.append(undoBtn, hintBtn, quitBtn);
-  uiRoot.append(title.root, setup.root, scoreEl, statusEl, actionsEl, bannerEl, result.root, toastEl);
+  uiRoot.append(setup.root, scoreEl, statusEl, actionsEl, bannerEl, result.root, toastEl);
   const score = new Scoreboard(scoreEl, ow, (n) => audio.flip(n));
-  for (const n of [title.root, setup.root, scoreEl, statusEl, actionsEl, bannerEl, result.root]) n.hidden = true;
+  for (const n of [setup.root, scoreEl, statusEl, actionsEl, bannerEl, result.root]) n.hidden = true;
 
   // ---------------------------------------------------------------- state
-  let screen = 'title';
+  let screen = 'setup';
   let local = null;
   let localId = 0;
   let w = 0;
@@ -144,22 +143,15 @@ async function boot(preview = '') {
   let cursor = -1;
   let hoverCell = -1;
   let quitArmed = 0;
-  let wantStart = 0; // seconds a host's rematch waits for the lobby
-  let autoReady = false;
+  let resultsUp = false; // the series that just ended: its result stays up in the lobby, until Setup or the next match
+  let localOver = false;
+  let matchId = '';
   let hintsMatch = '';
   let hintsUsed = 0;
   let toastTimer = 0;
   let setupBoardPop = 0;
 
   const anim = { key: '', shown: [], placed: {}, removed: [], lines: null, lineAt: null, winner: '', status: 'play', drawAt: null, endedKey: '', hint: null, pending: null, silent: false, bannerKey: '', n: 3, last: -1 };
-
-  // The demo on the title screen: two computers, a game after game.
-  function newDemo() {
-    const d = createLocal({ mode: 'demo', board: 3, games: 0, firstMark: 'x', a: { name: 'Coral', ai: 'normal' }, b: { name: 'Gold', ai: 'unbeatable' }, brain, beat: 1.6, pace: 0.55 });
-    d.start();
-    return d;
-  }
-  let demo = newDemo();
 
   // ---------------------------------------------------------------- helpers
   function toast(text) {
@@ -176,23 +168,15 @@ async function boot(preview = '') {
     return room.online.find((p) => p.id !== room.me.id) || null;
   }
   const isHost = () => !room || !usable || room.isHost;
-  const effOpponent = () => (friendInRoom() ? 'friend' : prefs.opponent === 'friend' && !usable ? 'computer' : prefs.opponent);
+  const effOpponent = () => (friendInRoom() ? 'friend' : prefs.opponent);
+  /** No room at all (it could not be joined, or the page runs outside the platform): nobody to draw a lobby, so the setup has a Start. */
+  const noLobby = () => !room || room.kind === 'solo';
 
   function recordLine(mode, level) {
     const r = mode === 'friend' ? stats.friend : mode === 'computer' ? stats.computer[level] || emptyRec() : null;
     if (!r || r.w + r.l + r.d === 0) return '';
     return `${r.w} W · ${r.l} L · ${r.d} D`;
   }
-  function totalLine() {
-    let r = { ...stats.friend };
-    for (const lv of ['easy', 'normal', 'unbeatable']) {
-      r.w += stats.computer[lv].w;
-      r.l += stats.computer[lv].l;
-      r.d += stats.computer[lv].d;
-    }
-    return r.w + r.l + r.d ? `Record ${r.w} W · ${r.l} L · ${r.d} D` : '';
-  }
-
   // ---------------------------------------------------------------- sizing
   // A preview named ...-390x844 is laid out for that window size and scaled into whatever the picture's size is (to look at a phone).
   const fixed = (() => {
@@ -215,8 +199,17 @@ async function boot(preview = '') {
     layout();
   }
 
+  /** What the platform's Ready strip takes from the bottom of the window. */
+  function stripSpace() {
+    const reserved = ow && ow.ui ? ow.ui.reserved : null;
+    if (!reserved) return noLobby() ? 0 : 88;
+    const strip = reserved.find((r) => r && r.kind === 'lobby');
+    return strip ? Math.max(0, h - strip.y) + 6 : 0;
+  }
+
   function layout() {
     const reserved = ow && ow.ui ? ow.ui.reserved : null;
+    result.root.style.bottom = `${stripSpace()}px`;
     if (screen === 'play') {
       const v = currentView();
       L = playLayout(w, h, reserved, { actions: true, status: true });
@@ -226,20 +219,15 @@ async function boot(preview = '') {
       place(actionsEl, L.actions);
       // the platform's lobby strip keeps the bottom clear in the lobby only; in play nothing but the menu is in our way
       void v;
-    } else if (screen === 'title') {
-      const S = stageLayout(w, h, reserved, {});
-      L = { board: S.board };
-      place(title.root, S.text);
     } else if (screen === 'setup') {
-      const strip = (reserved || []).find((r) => r && r.kind === 'lobby');
-      const bottomClear = strip ? Math.max(0, h - strip.y) : 0;
+      const bottomClear = stripSpace();
       const landscape = w >= h * 1.05;
       const wide = landscape || w >= 560;
       setupWide = wide;
       if (landscape) {
-        const S = stageLayout(w, h, reserved, { panel: 1 });
+        const S = stageLayout(w, h - bottomClear, reserved, { panel: 1 });
         L = { board: S.board };
-        place(setup.root, { x: S.text.x, y: S.text.y, w: S.text.w, h: S.text.h - bottomClear });
+        place(setup.root, { x: S.text.x, y: S.text.y, w: S.text.w, h: S.text.h });
       } else {
         const topPad = Math.round((reserved || []).find((r) => r && r.kind === 'menu') ? 0 : 0) + 64;
         const content = setup.contentHeight() || 380;
@@ -257,7 +245,6 @@ async function boot(preview = '') {
   // ---------------------------------------------------------------- screens
   function showScreen(next) {
     screen = next;
-    title.root.hidden = next !== 'title';
     setup.root.hidden = next !== 'setup';
     for (const n of [scoreEl, statusEl, actionsEl]) n.hidden = next !== 'play';
     if (next !== 'play') {
@@ -271,13 +258,6 @@ async function boot(preview = '') {
     layout();
   }
 
-  function onPlay() {
-    audio.startAudio();
-    audio.tap();
-    if (online && room.match.phase !== 'lobby') showScreen('play');
-    else showScreen('setup');
-  }
-
   function stopLocal() {
     local = null;
     localId++;
@@ -287,44 +267,16 @@ async function boot(preview = '') {
   function backToSetup() {
     audio.tap();
     leavingUntil = clock + 2;
-    if (local) {
-      stopLocal();
-      showScreen('setup');
-      return;
-    }
-    if (online && room.isHost) {
-      wantStart = 0;
-      room.endMatch();
-    }
+    resultsUp = false;
+    stopLocal();
+    if (room && room.isHost && room.match.phase !== 'lobby') room.endMatch();
     showScreen('setup');
-  }
-
-  function rematch() {
-    audio.tap();
-    if (local) {
-      local.restart();
-      anim.key = '';
-      return;
-    }
-    if (!online) return;
-    if (room.isHost) {
-      wantStart = 10;
-      room.endMatch();
-    } else {
-      autoReady = true;
-      refreshResult();
-    }
-  }
-
-  function toggleReady() {
-    audio.tap();
-    if (room) room.setReady(!room.me.ready);
   }
 
   // ---------------------------------------------------------------- setup
   function syncRoomSettings() {
     if (!online || !room.isHost || room.match.phase !== 'lobby') return;
-    const want = { opponent: friendInRoom() || prefs.opponent === 'friend' ? 'friend' : 'computer', board: prefs.board, series: prefs.series, level: prefs.level, mark: prefs.mark, timer: prefs.timer };
+    const want = { opponent: friendInRoom() ? 'friend' : 'computer', board: prefs.board, series: prefs.series, level: prefs.level, mark: prefs.mark, timer: prefs.timer };
     const have = room.settings;
     for (const id of Object.keys(want)) if (have[id] !== want[id]) room.setSetting(id, want[id]);
   }
@@ -332,10 +284,6 @@ async function boot(preview = '') {
   function onPick(id, value) {
     audio.tap();
     prefs[id] = value;
-    if (id === 'opponent') {
-      // a series against a friend is shorter by default
-      prefs.series = value === 'friend' ? 3 : 5;
-    }
     if (id === 'board') setupBoardPop = clock;
     save('prefs', prefs);
     syncRoomSettings();
@@ -353,41 +301,28 @@ async function boot(preview = '') {
       wide: setupWide,
       prefs: { ...prefs, opponent: opp },
       alone,
-      friend: f && host ? { name: f.name, avatarId: f.id, ready: !!f.ready } : null,
-      me: { name: me.name, avatarId: me.id, ready: !!(room && room.me && room.me.ready) },
+      friend: f && host ? { name: f.name, avatarId: f.id } : null,
+      me: { name: me.name, avatarId: me.id },
       hostPlayer: { name: 'Host', avatarId: '' },
       settings: { board: boardFor(Number(room?.settings?.board) || 3).n, series: Number(room?.settings?.series ?? 5), timer: Number(room?.settings?.timer) || 0 },
-      canStart: true,
-      startLabel: 'Start',
-      note: '',
+      ownStart: noLobby(),
     };
     if (!host && room) {
       const hp = room.players.get(room.host);
       m.hostPlayer = { name: hp ? hp.name : 'Host', avatarId: room.host };
     }
-    if (host) {
-      if (opp === 'friend') {
-        if (!f) {
-          m.canStart = false;
-          m.startLabel = 'Start';
-          m.note = '';
-        } else if (!f.ready) {
-          m.canStart = false;
-          m.startLabel = `Waiting for ${f.name}`;
-        }
-      }
-    }
     return m;
   }
 
-  function startFromSetup() {
+  function startWithoutRoom() {
     audio.startAudio();
-    const opp = effOpponent();
-    if (opp === 'same' || !usable) return startLocal(opp === 'same' ? 'same' : 'computer');
-    if (!room.isHost) return;
-    syncRoomSettings();
-    audio.begin();
-    room.startMatch();
+    startLocal(effOpponent() === 'same' ? 'same' : 'computer');
+  }
+
+  /** The platform's Start began a match: same screen (or no helpers to run an online one) plays it on this page. */
+  function startLocalIfWanted() {
+    if (!online) startLocal('computer');
+    else if (room.isHost && !friendInRoom() && effOpponent() === 'same') startLocal('same');
   }
 
   function startLocal(mode) {
@@ -406,6 +341,7 @@ async function boot(preview = '') {
     });
     local.id = id;
     local.start();
+    localOver = false;
     anim.key = '';
     audio.begin();
     showScreen('play');
@@ -413,9 +349,8 @@ async function boot(preview = '') {
 
   // ---------------------------------------------------------------- the view
   function currentView() {
-    if (screen === 'title') return demo.view();
     if (local) return local.view();
-    if (online) return online.view({ hintsLeft: Math.max(0, 3 - hintsUsed) });
+    if (online) return online.view({ hintsLeft: Math.max(0, 3 - hintsUsed), results: resultsUp });
     return null;
   }
 
@@ -633,7 +568,7 @@ async function boot(preview = '') {
   }
   const seriesDone = new Set();
   function countSeries(v) {
-    const key = room && room.match ? room.match.id : `l${localId}`;
+    const key = local || !room ? `l${localId}` : matchId;
     if (seriesDone.has(key)) return;
     seriesDone.add(key);
     if (v.mode === 'friend' && v.champion && v.champion !== 'draw' && v.champion.me && !v.ff && !v.spectating) award('friend-win');
@@ -745,7 +680,6 @@ async function boot(preview = '') {
     }
     const ch = v.champion;
     const draw = ch === 'draw';
-    const canRematch = !!local || (online && !v.spectating && (room.isHost || true));
     const guest = !local && online && !room.isHost;
     result.update({
       over: 'Series over',
@@ -755,10 +689,7 @@ async function boot(preview = '') {
       b: v.b,
       state: v.state,
       why: v.ff ? `${(v.a.id === v.ff ? v.a : v.b).name} left the game` : '',
-      canRematch,
       canSetup: !guest && !v.spectating,
-      rematchLabel: guest ? (autoReady ? 'Waiting for host' : 'Rematch') : 'Rematch',
-      waiting: guest && autoReady,
       record: v.mode === 'computer' ? `${LEVEL_NAMES[v.level] || ''}  ${recordLine('computer', v.level)}` : v.mode === 'friend' ? recordLine('friend') : '',
     });
     if (result.root.hidden) {
@@ -792,11 +723,6 @@ async function boot(preview = '') {
     if (e.repeat && !/^Arrow/.test(e.key)) return;
     audio.startAudio();
     if (e.metaKey || e.ctrlKey || e.altKey) return;
-    if (screen === 'title' && (e.key === 'Enter' || e.key === ' ')) {
-      e.preventDefault();
-      onPlay();
-      return;
-    }
     if (screen !== 'play') return;
     const v = currentView();
     if (!v) return;
@@ -833,22 +759,35 @@ async function boot(preview = '') {
 
   // ---------------------------------------------------------------- the room's events
   function roomMatchChanged() {
-    if (!online) return;
+    if (!room) return;
     const phase = room.match.phase;
+    if (phase !== 'lobby') matchId = room.match.id;
     if (phase !== 'lobby' && screen !== 'play') {
       if (clock < leavingUntil) return;
       showScreen('play');
-    } else if (phase === 'lobby' && screen === 'play' && !local) {
-      if (wantStart > 0 || autoReady) return; // a rematch is on its way
-      showScreen('setup');
-    }
+    } else if (phase === 'lobby' && screen === 'play' && !local && !resultsUp) showScreen('setup');
   }
-  if (room && usable) {
+  if (room) {
     for (const ev of ['match', 'matchstart', 'matchend']) room.on(ev, roomMatchChanged);
+    room.on('starting', () => {
+      leavingUntil = 0;
+      resultsUp = false;
+      stopLocal();
+    });
     room.on('matchstart', () => {
       gamesCounted.clear();
       hintsUsed = 0;
       hintsMatch = room.match.id;
+      audio.startAudio();
+      startLocalIfWanted();
+      if (!local) audio.begin();
+    });
+    room.on('matchend', () => {
+      // a local series keeps its result on screen; one cut short is simply over
+      if (local && local.view().phase !== 'results') {
+        stopLocal();
+        showScreen('setup');
+      }
     });
     room.on('settings', () => layout());
     room.on('host', () => {
@@ -857,16 +796,21 @@ async function boot(preview = '') {
     });
     room.on('join', () => {
       layout();
-      if (local && local.view().mode === 'same') {
-        stopLocal();
-        showScreen('setup');
-        toast('Friend joined');
-      }
+      leaveSameScreen();
     });
     room.on('leave', (p) => {
       if (screen === 'setup') layout();
       void p;
     });
+  }
+
+  /** Same screen is for a room of one: the room's lobby takes over when a friend arrives. */
+  function leaveSameScreen() {
+    if (!local || local.view().mode !== 'same' || !friendInRoom()) return;
+    stopLocal();
+    if (room.isHost && room.match.phase !== 'lobby') room.endMatch();
+    showScreen('setup');
+    toast('Friend joined');
   }
 
   // ---------------------------------------------------------------- the frame
@@ -896,41 +840,27 @@ async function boot(preview = '') {
         lastSig = '';
       }
     }
-    if (screen === 'title') demo.tick(dt);
     if (local) local.tick(dt);
 
-    // a friend joining a same-screen game ends it; a host's rematch waits for the lobby
-    if (local && local.view().mode === 'same' && room && usable && room.online.length > 1) {
-      stopLocal();
-      showScreen('setup');
-      toast('Friend joined');
+    leaveSameScreen();
+    // a series played on this page ends the room's match around it: the strip comes back under its result
+    if (local && !localOver && local.view().phase === 'results') {
+      localOver = true;
+      if (room && room.isHost && room.match.phase !== 'lobby') room.endMatch();
     }
     if (online) {
+      // the room's series is over: its result stays up when the lobby comes back
+      if (room.match.phase === 'playing' && online.match.phase === 'results') resultsUp = true;
       roomMatchChanged();
-      if (wantStart > 0) {
-        wantStart -= dt;
-        if (room.match.phase === 'lobby' && room.isHost) {
-          const f = friendInRoom();
-          if (room.canStart && (!f || f.ready || effOpponent() !== 'friend')) {
-            wantStart = 0;
-            syncRoomSettings();
-            room.startMatch();
-          }
-        }
-      }
-      if (autoReady && room.match.phase === 'lobby') {
-        room.setReady(true);
-        autoReady = false;
-      }
       if (screen === 'setup' && room.isHost) syncRoomSettings();
     }
 
     // what to draw
     let v = null;
     let key = '';
-    if (screen === 'title' || screen === 'play') {
+    if (screen === 'play') {
       v = currentView();
-      if (v && v.data) key = screen === 'title' ? `demo${demo === null ? 0 : demo.view().g}.${v.g}` : local ? `l${localId}.${v.data.g}` : `${room.match.id}.${v.data.g}`;
+      if (v && v.data) key = local ? `l${localId}.${v.data.g}` : `${matchId}.${v.data.g}`;
     }
     const empty = !v || !v.data;
     if (screen === 'play' && v) {
@@ -949,16 +879,14 @@ async function boot(preview = '') {
         }
       }
     }
-    if (v && v.data) syncPieces(v, key, screen === 'title');
+    if (v && v.data) syncPieces(v, key, false);
     if (screen === 'play' && v && v.data) {
       if (v.phase === 'play' || v.phase === 'between' || v.phase === 'results') countGame(v, key);
       if (v.phase === 'results') countSeries(v);
     }
 
     // the interface
-    if (screen === 'title') {
-      title.update({ record: totalLine() });
-    } else if (screen === 'setup') {
+    if (screen === 'setup') {
       setup.update(setupModel());
       const ch = setup.contentHeight();
       if (ch && Math.abs((setup.root.dataset.sh | 0) - ch) > 2) {
@@ -968,8 +896,11 @@ async function boot(preview = '') {
     } else if (screen === 'play' && v) {
       layout_if_needed();
       score.update(v.a && v.b ? v : fallbackView(), L && L.score.mode);
-      scoreEl.hidden = !(v.a && v.b);
-      const text = v.phase === 'wait' || empty ? 'Get ready' : statusText(v);
+      // the countdown is the platform's: nothing of a series here yet
+      const waiting = v.phase === 'wait' || empty;
+      scoreEl.hidden = waiting || !(v.a && v.b);
+      actionsEl.hidden = waiting;
+      const text = waiting ? '' : statusText(v);
       setStatus(v, text);
       refreshActions(v, false);
       if (v.phase === 'results') refreshResult();
@@ -994,7 +925,7 @@ async function boot(preview = '') {
       board: bd,
       n,
       cells,
-      last: screen === 'play' || screen === 'title' ? anim.last : -1,
+      last: screen === 'play' ? anim.last : -1,
       placed: anim.placed,
       removed: anim.removed,
       lines: anim.lines,
@@ -1009,7 +940,7 @@ async function boot(preview = '') {
       pop: setupBoardPop,
       shake: fx.offset(Math.min(w, h) / 500),
       fx,
-      dim: screen === 'title' ? 0.18 : 0,
+      dim: 0,
     };
     renderer.frame(scene);
   }
@@ -1047,8 +978,9 @@ async function boot(preview = '') {
   }
 
   // ---------------------------------------------------------------- go
-  showScreen('title');
-  if (online && room.match.phase !== 'lobby') showScreen('play');
+  showScreen(online && room.match.phase !== 'lobby' ? 'play' : 'setup');
+  // a reload during a same-screen series: it starts over on this screen (the room's match is its frame)
+  if (room && room.match.phase === 'playing') startLocalIfWanted();
   resize();
   requestAnimationFrame((t) => {
     last = t;
@@ -1067,11 +999,9 @@ async function boot(preview = '') {
     };
     void A;
     void B;
-    if (name === 'ui-title') showScreen('title');
-    else if (name === 'ui-setup') showScreen('setup');
+    if (name === 'ui-setup') showScreen('setup');
     else if (name === 'ui-setup-friend') {
-      previewFriend = { id: 'f1', name: 'Mira', ready: false };
-      prefs.opponent = 'friend';
+      previewFriend = { id: 'f1', name: 'Mira' };
       showScreen('setup');
     } else if (name === 'ui-setup-5') {
       prefs.board = 5;
